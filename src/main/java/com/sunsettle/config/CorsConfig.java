@@ -13,16 +13,14 @@ public class CorsConfig {
         return new WebMvcConfigurer() {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
-
                 registry.addMapping("/**")
                         .allowedOrigins(
-                                "http://localhost:3000",              // Dev
-                                "https://sunsettle.your-domain.com", // Production Domain
-                                "https://your-react-host.com"        // Netlify/Vercel URL
+                                "https://sunsettle-frontend.onrender.com",
+                                "http://localhost:3000"
                         )
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                         .allowedHeaders("*")
-                        .allowCredentials(true);  // Allow cookies/token
+                        .allowCredentials(true);
             }
         };
     }
