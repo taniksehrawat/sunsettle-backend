@@ -37,11 +37,7 @@ public class SiteController {
      * --------------------------------------------------------- */
 
     // ADMIN: Create Site for Client
-    @PostMapping("/admin/site/{clientId}")
-    public Site createSite(@PathVariable Long clientId,
-                           @RequestBody Site site) {
-        return siteService.createSite(clientId, site);
-    }
+    
 
     // ADMIN: View all sites
     @GetMapping("/admin/sites")
