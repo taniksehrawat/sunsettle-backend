@@ -40,16 +40,10 @@ public class SiteController {
     
 
     // ADMIN: View all sites
-    @GetMapping("/admin/sites")
-    public List<Site> getAllSites() {
-        return siteService.getAllSites();
-    }
+    
 
     // ADMIN: View sites by Client ID
-    @GetMapping("/admin/sites/client/{clientId}")
-    public List<Site> getSitesByClient(@PathVariable Long clientId) {
-        return siteService.getSitesByClient(clientId);
-    }
+    
 
 
     /* ---------------------------------------------------------
