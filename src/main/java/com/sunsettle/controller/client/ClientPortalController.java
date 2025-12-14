@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/client")
-public class ClientController {
+public class ClientPortalController {
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository;
@@ -24,7 +24,7 @@ public class ClientController {
     private final BillingService billingService;
     private final EnergySummaryService energySummaryService;
 
-    public ClientController(JwtUtil jwtUtil,
+    public ClientPortalController(JwtUtil jwtUtil,
                             UserRepository userRepository,
                             SiteRepository siteRepository,
                             BillingService billingService,
