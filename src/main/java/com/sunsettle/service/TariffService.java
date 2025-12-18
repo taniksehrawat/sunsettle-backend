@@ -12,24 +12,26 @@ public class TariffService {
     private final TariffRepository tariffRepository;
     private final SiteRepository siteRepository;
 
-    public TariffService(TariffRepository tariffRepository, SiteRepository siteRepository) {
+    public TariffService(TariffRepository tariffRepository,
+                         SiteRepository siteRepository) {
         this.tariffRepository = tariffRepository;
         this.siteRepository = siteRepository;
     }
 
-    public Tariff setTariff(Long siteId, Double rate) {
+    public void setTariff(Long siteId, Double rate) {
+
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new RuntimeException("Site not found"));
 
-        Tariff tariff = Tariff.builder()
-                .ratePerKwh(rate)
-                .site(site)
-                .build();
+        Tariff tariff = tariffRepository.findBySiteId(siteId);
 
-        return tariffRepository.save(tariff);
-    }
+        // 👉 If tariff doesn't exist, CREATE it (important for MVP)
+        if (tariff == null) {
+            tariff = new Tariff();
+            tariff.setSite(site);
+        }
 
-    public Tariff getTariff(Long siteId) {
-        return tariffRepository.findBySiteId(siteId);
+        tariff.setRatePerKwh(rate);
+        tariffRepository.save(tariff);
     }
 }
