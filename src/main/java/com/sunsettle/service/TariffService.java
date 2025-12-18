@@ -36,5 +36,6 @@ public class TariffService {
 
         tariff.setRatePerKwh(rate);
         tariffRepository.save(tariff);
+        System.out.println("TARIFF SERVICE HIT");
     }
 }

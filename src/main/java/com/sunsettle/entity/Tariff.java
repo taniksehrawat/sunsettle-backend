@@ -1,15 +1,9 @@
 package com.sunsettle.entity;
 
 import jakarta.persistence.*;
-import lombok.*;
 
 @Entity
 @Table(name = "tariffs")
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
 public class Tariff {
 
     @Id
@@ -22,4 +16,24 @@ public class Tariff {
     @OneToOne
     @JoinColumn(name = "site_id", nullable = false, unique = true)
     private Site site;
+
+    public Long getId() {
+        return id;
+    }
+
+    public Double getRatePerKwh() {
+        return ratePerKwh;
+    }
+
+    public void setRatePerKwh(Double ratePerKwh) {
+        this.ratePerKwh = ratePerKwh;
+    }
+
+    public Site getSite() {
+        return site;
+    }
+
+    public void setSite(Site site) {
+        this.site = site;
+    }
 }
