@@ -16,14 +16,10 @@ public class Tariff {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(name = "rate_per_kwh", nullable = false)
     private Double ratePerKwh;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(
-        name = "site_id",
-        nullable = false,
-        unique = true
-    )
+    @OneToOne
+    @JoinColumn(name = "site_id", nullable = false, unique = true)
     private Site site;
 }

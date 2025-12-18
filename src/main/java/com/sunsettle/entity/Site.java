@@ -17,12 +17,11 @@ public class Site {
     private Long id;
 
     private String siteName;
-
     private String location;
-
-    private Double capacityKw;   // plant capacity in kW
+    private Double capacityKw;
 
     @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
 }
+
