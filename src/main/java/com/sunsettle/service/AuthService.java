@@ -8,8 +8,10 @@ import com.sunsettle.entity.UserRole;
 import com.sunsettle.repository.UserRepository;
 import com.sunsettle.config.JwtUtil;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 @Service
 public class AuthService {
@@ -30,7 +32,10 @@ public class AuthService {
     public String register(RegisterRequest req) {
 
         if (userRepository.findByEmail(req.getEmail()) != null) {
-            return "User already exists!";
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "User already exists"
+            );
         }
 
         User user = User.builder()
@@ -50,14 +55,23 @@ public class AuthService {
         User user = userRepository.findByEmail(req.getEmail());
 
         if (user == null) {
-            throw new RuntimeException("User not found!");
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid email or password"
+            );
         }
 
         if (!passwordEncoder.matches(req.getPassword(), user.getPassword())) {
-            throw new RuntimeException("Invalid password!");
+            throw new ResponseStatusException(
+                    HttpStatus.UNAUTHORIZED,
+                    "Invalid email or password"
+            );
         }
 
-        String token = jwtUtil.generateToken(user.getEmail(), user.getRole().name());
+        String token = jwtUtil.generateToken(
+                user.getEmail(),
+                user.getRole().name()
+        );
 
         return LoginResponse.builder()
                 .token(token)
