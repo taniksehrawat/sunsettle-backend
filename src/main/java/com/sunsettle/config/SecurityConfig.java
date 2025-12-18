@@ -10,6 +10,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 public class SecurityConfig {
@@ -23,41 +28,76 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
-        http.csrf(csrf -> csrf.disable())
+        http
+            // Disable CSRF (JWT based auth)
+            .csrf(csrf -> csrf.disable())
 
-                .authorizeHttpRequests(auth -> auth
+            // Enable CORS
+            .cors(cors -> {})
 
-                        // Anyone can access authentication APIs
-                        .requestMatchers("/auth/**").permitAll()
+            // Authorization rules
+            .authorizeHttpRequests(auth -> auth
 
-                        // Only ADMIN can access admin APIs
-                        .requestMatchers("/admin/**").hasAuthority("ADMIN")
+                // ✅ PUBLIC AUTH ENDPOINTS
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**"
+                ).permitAll()
 
-                        // Only CLIENT can access client APIs
-                        .requestMatchers("/client/**").hasAuthority("CLIENT")
+                // ADMIN APIs
+                .requestMatchers("/admin/**").hasAuthority("ADMIN")
 
-                        // Everything else requires login
-                        .anyRequest().authenticated()
-                )
+                // CLIENT APIs
+                .requestMatchers("/client/**").hasAuthority("CLIENT")
 
-                // No sessions → JWT stateless
-                .sessionManagement(sm ->
-                        sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-                );
+                // Everything else needs authentication
+                .anyRequest().authenticated()
+            )
 
-        // Add JWT filter
+            // Stateless session (JWT)
+            .sessionManagement(sm ->
+                sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            );
+
+        // JWT filter before username/password filter
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // 🔐 Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    // 🔑 Authentication manager
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
+    }
+
+    // 🌐 CORS configuration (IMPORTANT)
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
+
+        config.setAllowedOrigins(List.of(
+            "http://localhost:5173",
+            "https://sunsettle-frontend.onrender.com"
+        ));
+
+        config.setAllowedMethods(List.of(
+            "GET", "POST", "PUT", "DELETE", "OPTIONS"
+        ));
+
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+
+        return source;
     }
 }
