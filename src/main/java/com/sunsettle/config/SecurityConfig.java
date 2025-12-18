@@ -45,8 +45,9 @@ public class SecurityConfig {
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                // 🔐 ALL OTHER APIS NEED JWT
-                .anyRequest().authenticated()
+                // 🔐 ROLE BASED ACCESS (JWT REQUIRED)
+                // Spring internally checks ROLE_CLIENT / ROLE_ADMIN
+                .anyRequest().hasAnyRole("CLIENT", "ADMIN")
             )
 
             // Stateless session (JWT)
@@ -54,7 +55,7 @@ public class SecurityConfig {
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
 
-        // JWT filter before UsernamePasswordAuthenticationFilter
+        // JWT filter BEFORE Spring auth filter
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

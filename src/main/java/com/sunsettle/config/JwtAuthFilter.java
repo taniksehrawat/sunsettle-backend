@@ -24,7 +24,6 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
     }
 
-    // ✅ CORRECT WAY TO SKIP AUTH ENDPOINTS
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         return request.getRequestURI().startsWith("/api/auth");
@@ -58,14 +57,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 new UsernamePasswordAuthenticationToken(
                         email,
                         null,
-                        List.of(new SimpleGrantedAuthority(role))
+                        List.of(new SimpleGrantedAuthority("ROLE_" + role))
                 );
 
         authentication.setDetails(
                 new WebAuthenticationDetailsSource().buildDetails(request)
         );
 
-        // 🔥 THIS IS THE KEY LINE
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
