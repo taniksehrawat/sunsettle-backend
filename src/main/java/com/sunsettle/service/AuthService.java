@@ -42,7 +42,8 @@ public class AuthService {
                 .name(req.getName())
                 .email(req.getEmail())
                 .password(passwordEncoder.encode(req.getPassword()))
-                .role(UserRole.valueOf(req.getRole().toUpperCase()))
+                // ✅ DEFAULT ROLE (DO NOT TAKE FROM FRONTEND)
+                .role(UserRole.CLIENT)
                 .build();
 
         userRepository.save(user);
