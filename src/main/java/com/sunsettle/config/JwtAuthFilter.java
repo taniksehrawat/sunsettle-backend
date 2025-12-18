@@ -5,13 +5,14 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
@@ -30,7 +31,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String path = request.getRequestURI();
 
-        // ✅ IMPORTANT: Skip JWT check for auth endpoints
+        // 🔓 Skip auth endpoints
         if (path.startsWith("/api/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -44,24 +45,23 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         }
 
         String token = authHeader.substring(7);
-        String email;
 
-        try {
-            email = jwtUtil.extractEmail(token);
-        } catch (Exception e) {
+        if (!jwtUtil.isValid(token)) {
             filterChain.doFilter(request, response);
             return;
         }
 
+        String email = jwtUtil.extractEmail(token);
+        String role = jwtUtil.extractRole(token); // CLIENT / ADMIN
+
         if (email != null &&
-            SecurityContextHolder.getContext().getAuthentication() == null &&
-            jwtUtil.isValid(token)) {
+            SecurityContextHolder.getContext().getAuthentication() == null) {
 
             UsernamePasswordAuthenticationToken authToken =
                     new UsernamePasswordAuthenticationToken(
                             email,
                             null,
-                            Collections.emptyList() // authorities can be added later
+                            List.of(new SimpleGrantedAuthority(role))
                     );
 
             authToken.setDetails(
@@ -69,7 +69,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             .buildDetails(request)
             );
 
-            SecurityContextHolder.getContext().setAuthentication(authToken);
+            SecurityContextHolder.getContext()
+                    .setAuthentication(authToken);
         }
 
         filterChain.doFilter(request, response);
