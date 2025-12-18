@@ -14,7 +14,6 @@ import java.io.ByteArrayInputStream;
 
 @RestController
 @RequestMapping("/api/billing")
-@CrossOrigin(origins = "*")
 public class BillingController {
 
     private final BillingService billingService;
