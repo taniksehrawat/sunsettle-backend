@@ -34,7 +34,7 @@ public class BillingService {
        ------------------------------------------------------------- */
     public BillDTO generateBill(Long siteId, int month, int year) {
 
-        Tariff tariff = tariffRepository.findBySiteId(siteId);
+        Tariff tariff = tariffRepository.findBySite_Id(siteId);
         if (tariff == null)
             throw new RuntimeException("Tariff not set for this site");
 
