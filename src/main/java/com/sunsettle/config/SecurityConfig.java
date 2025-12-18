@@ -35,19 +35,18 @@ public class SecurityConfig {
             // Enable CORS
             .cors(cors -> {})
 
-            // 🔓 AUTHORIZATION RULES
+            // 🔐 AUTHORIZATION RULES
             .authorizeHttpRequests(auth -> auth
 
-                // ✅ AUTH APIs MUST BE OPEN
+                // 🔓 PUBLIC ENDPOINTS
                 .requestMatchers(
                     "/api/auth/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                // 🔓 TEMPORARILY ALLOW EVERYTHING ELSE
-                // (This removes 403 caused by missing authorities)
-                .anyRequest().permitAll()
+                // 🔐 ALL OTHER APIS NEED JWT
+                .anyRequest().authenticated()
             )
 
             // Stateless session (JWT)
@@ -55,7 +54,7 @@ public class SecurityConfig {
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
 
-        // JWT filter
+        // JWT filter before UsernamePasswordAuthenticationFilter
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -78,6 +77,7 @@ public class SecurityConfig {
     // 🌐 CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
+
         CorsConfiguration config = new CorsConfiguration();
 
         config.setAllowedOrigins(List.of(
