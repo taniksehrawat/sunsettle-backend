@@ -7,8 +7,8 @@ import lombok.*;
 @Table(name = "tariffs")
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @Builder
 public class Tariff {
 
@@ -16,9 +16,9 @@ public class Tariff {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double ratePerKwh; // tariff rate
+    private Double ratePerKwh;
 
     @OneToOne
-    @JoinColumn(name = "site_id")
+    @JoinColumn(name = "site_id", nullable = false, unique = true)
     private Site site;
 }
