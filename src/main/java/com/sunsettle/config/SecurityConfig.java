@@ -29,45 +29,34 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-            // JWT based app → CSRF not needed
             .csrf(csrf -> csrf.disable())
-
-            // Enable CORS
             .cors(cors -> {})
 
-            // 🔐 AUTHORIZATION RULES
             .authorizeHttpRequests(auth -> auth
-
-                // 🔓 PUBLIC ENDPOINTS
                 .requestMatchers(
                     "/api/auth/**",
                     "/swagger-ui/**",
                     "/v3/api-docs/**"
                 ).permitAll()
 
-                // 🔐 ROLE BASED ACCESS (JWT REQUIRED)
-                // Spring internally checks ROLE_CLIENT / ROLE_ADMIN
-                .anyRequest().hasAnyRole("CLIENT", "ADMIN")
+                // 🔥 ONLY AUTHENTICATION REQUIRED
+                .anyRequest().authenticated()
             )
 
-            // Stateless session (JWT)
             .sessionManagement(sm ->
                 sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
             );
 
-        // JWT filter BEFORE Spring auth filter
         http.addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
-    // 🔐 Password encoder
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
-    // 🔑 Authentication manager
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration config
@@ -75,7 +64,6 @@ public class SecurityConfig {
         return config.getAuthenticationManager();
     }
 
-    // 🌐 CORS configuration
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
 
