@@ -1,75 +1,39 @@
 package com.sunsettle.controller;
 
 import com.sunsettle.entity.Site;
-import com.sunsettle.entity.User;
-import com.sunsettle.repository.SiteRepository;
-import com.sunsettle.repository.UserRepository;
-import com.sunsettle.config.JwtUtil;
 import com.sunsettle.service.SiteService;
-
-import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping
-
+@RequestMapping("/api")
 public class SiteController {
 
     private final SiteService siteService;
-    private final JwtUtil jwtUtil;
-    private final UserRepository userRepository;
-    private final SiteRepository siteRepository;
 
-    public SiteController(SiteService siteService, 
-                          JwtUtil jwtUtil,
-                          UserRepository userRepository,
-                          SiteRepository siteRepository) {
+    public SiteController(SiteService siteService) {
         this.siteService = siteService;
-        this.jwtUtil = jwtUtil;
-        this.userRepository = userRepository;
-        this.siteRepository = siteRepository;
     }
 
-    /* ---------------------------------------------------------
-     *  ADMIN ENDPOINTS
-     * --------------------------------------------------------- */
-
-    // ADMIN: Create Site for Client
-    
-
-    // ADMIN: View all sites
-    
-
-    // ADMIN: View sites by Client ID
-    
-
-
-    /* ---------------------------------------------------------
-     *  CLIENT ENDPOINTS
-     * --------------------------------------------------------- */
-
-    // CLIENT: Get all my sites (based on JWT)
-    @GetMapping("/client/my-sites")
-    public List<Site> getMySites(HttpServletRequest request) {
-
-        String token = request.getHeader("Authorization").substring(7);
-        String email = jwtUtil.extractEmail(token);
-        User user = userRepository.findByEmail(email);
-
-        return siteRepository.findByClient_User_Id(user.getId());
+    // ✅ CREATE SITE FOR CLIENT
+    @PostMapping("/clients/{clientId}/sites")
+    public Site createSite(
+            @PathVariable Long clientId,
+            @RequestBody Site site
+    ) {
+        return siteService.createSite(clientId, site);
     }
 
-    // CLIENT: Get one site WITH security (only if site belongs to client)
-    @GetMapping("/client/site/{siteId}")
-    public Site getMySiteDetails(@PathVariable Long siteId,
-                                 HttpServletRequest request) {
+    // ✅ GET ALL SITES (DEMO / ADMIN VIEW)
+    @GetMapping("/sites")
+    public List<Site> getAllSites() {
+        return siteService.getAllSites();
+    }
 
-        String token = request.getHeader("Authorization").substring(7);
-        String email = jwtUtil.extractEmail(token);
-        User user = userRepository.findByEmail(email);
-
-        return siteService.getSiteForClient(siteId, user.getId());
+    // ✅ GET SITES FOR A CLIENT
+    @GetMapping("/clients/{clientId}/sites")
+    public List<Site> getSitesByClient(@PathVariable Long clientId) {
+        return siteService.getSitesByClient(clientId);
     }
 }
