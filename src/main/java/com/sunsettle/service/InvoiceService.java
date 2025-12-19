@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import java.awt.Color;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -35,12 +37,18 @@ public class InvoiceService {
     public ByteArrayInputStream generateInvoice(Long siteId, int month, int year) throws Exception {
 
         // --------------------------------------------------
-        // 1️⃣ BUSINESS DATA (NO CHANGE)
+        // 1️⃣ BUSINESS DATA
         // --------------------------------------------------
         BillDTO bill = billingService.generateBill(siteId, month, year);
 
         Site site = siteRepository.findById(siteId)
                 .orElseThrow(() -> new RuntimeException("Site not found"));
+
+        // Round values (professional invoices never show long decimals)
+        double exportKwh = round(bill.getExportKwh());
+        double energyCharge = round(bill.getEnergyCharge());
+        double gst = round(bill.getGst18());
+        double total = round(bill.getTotalPayable());
 
         // --------------------------------------------------
         // 2️⃣ PDF SETUP
@@ -50,21 +58,22 @@ public class InvoiceService {
         PdfWriter.getInstance(document, out);
         document.open();
 
-        Font titleFont = new Font(Font.HELVETICA, 16, Font.BOLD);
+        Font title = new Font(Font.HELVETICA, 15, Font.BOLD);
         Font bold = new Font(Font.HELVETICA, 10, Font.BOLD);
         Font normal = new Font(Font.HELVETICA, 10);
+        Font small = new Font(Font.HELVETICA, 9, Font.NORMAL, Color.DARK_GRAY);
 
         // --------------------------------------------------
-        // 3️⃣ HEADER (LOGO + COMPANY INFO — SAME ROW)
+        // 3️⃣ HEADER (LOGO + COMPANY)
         // --------------------------------------------------
-        PdfPTable headerTable = new PdfPTable(2);
-        headerTable.setWidthPercentage(100);
-        headerTable.setWidths(new float[]{1, 3});
+        PdfPTable header = new PdfPTable(2);
+        header.setWidthPercentage(100);
+        header.setWidths(new float[]{1.2f, 3.8f});
 
         Image logo = Image.getInstance(
                 getClass().getResource("/static/logo.png")
         );
-        logo.scaleToFit(120, 60);
+        logo.scaleToFit(110, 55);
 
         PdfPCell logoCell = new PdfPCell(logo);
         logoCell.setBorder(Rectangle.NO_BORDER);
@@ -72,39 +81,34 @@ public class InvoiceService {
 
         PdfPCell companyCell = new PdfPCell();
         companyCell.setBorder(Rectangle.NO_BORDER);
-        companyCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        companyCell.addElement(new Paragraph("SUNSETTLE ENERGY PRIVATE LIMITED", title));
         companyCell.addElement(new Paragraph(
-                "SUNSETTLE ENERGY PRIVATE LIMITED", titleFont
-        ));
-        companyCell.addElement(new Paragraph(
-                "GSTIN: 06ABCDE1234F1Z5\n" +
-                "support@sunsettle.com\n" +
-                "www.sunsettle.com",
-                normal
+                "GSTIN: 06ABCDE1234F1Z5\nsupport@sunsettle.com\nwww.sunsettle.com",
+                small
         ));
 
-        headerTable.addCell(logoCell);
-        headerTable.addCell(companyCell);
-        document.add(headerTable);
+        header.addCell(logoCell);
+        header.addCell(companyCell);
+        document.add(header);
 
         document.add(new Paragraph("\n"));
 
         // --------------------------------------------------
-        // 4️⃣ INVOICE META (RIGHT SIDE)
+        // 4️⃣ INVOICE META (RIGHT BOX)
         // --------------------------------------------------
-        PdfPTable metaTable = new PdfPTable(2);
-        metaTable.setWidthPercentage(40);
-        metaTable.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        PdfPTable meta = new PdfPTable(2);
+        meta.setWidthPercentage(45);
+        meta.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-        addMeta(metaTable, "Invoice No", "INV-" + System.currentTimeMillis(), bold, normal);
-        addMeta(metaTable, "Invoice Date", LocalDate.now().toString(), bold, normal);
-        addMeta(metaTable, "Billing Period", month + "-" + year, bold, normal);
+        addMeta(meta, "Invoice No", "INV-" + System.currentTimeMillis(), bold, normal);
+        addMeta(meta, "Invoice Date", LocalDate.now().toString(), bold, normal);
+        addMeta(meta, "Billing Period", month + "-" + year, bold, normal);
 
-        document.add(metaTable);
+        document.add(meta);
         document.add(new Paragraph("\n"));
 
         // --------------------------------------------------
-        // 5️⃣ BILL TO SECTION
+        // 5️⃣ BILL TO
         // --------------------------------------------------
         document.add(new Paragraph("BILL TO:", bold));
         document.add(new Paragraph(site.getClient().getName(), normal));
@@ -124,26 +128,17 @@ public class InvoiceService {
         addHeader(table, "Units");
         addHeader(table, "Amount (₹)");
 
-        addRow(table,
-                "1",
-                "Exported Energy Charges",
-                bill.getExportKwh() + " kWh",
-                bill.getEnergyCharge()
-        );
+        addRow(table, "1", "Exported Energy Charges",
+                exportKwh + " kWh", energyCharge);
 
-        addRow(table,
-                "2",
-                "GST @ 18%",
-                "",
-                bill.getGst18()
-        );
+        addRow(table, "2", "GST @ 18%", "", gst);
 
         PdfPCell totalLabel = new PdfPCell(new Phrase("TOTAL PAYABLE", bold));
         totalLabel.setColspan(3);
         totalLabel.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
         PdfPCell totalValue = new PdfPCell(
-                new Phrase("₹ " + bill.getTotalPayable(), bold)
+                new Phrase("₹ " + total, bold)
         );
         totalValue.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
@@ -159,7 +154,7 @@ public class InvoiceService {
                 "\nThis is a system generated invoice.\n" +
                 "Payment due within 15 days.\n\n" +
                 "Authorized Signatory",
-                normal
+                small
         );
         footer.setAlignment(Element.ALIGN_CENTER);
         document.add(footer);
@@ -167,7 +162,7 @@ public class InvoiceService {
         document.close();
 
         // --------------------------------------------------
-        // 8️⃣ SAVE INVOICE (NO CHANGE)
+        // 8️⃣ SAVE INVOICE
         // --------------------------------------------------
         Invoice invoice = Invoice.builder()
                 .siteId(siteId)
@@ -175,12 +170,13 @@ public class InvoiceService {
                 .month(month + "-" + year)
                 .monthNumber(month)
                 .year(year)
-                .exportKwh(bill.getExportKwh())
-                .energyCharge(bill.getEnergyCharge())
-                .gst18(bill.getGst18())
-                .totalPayable(bill.getTotalPayable())
+                .exportKwh(exportKwh)
+                .energyCharge(energyCharge)
+                .gst18(gst)
+                .totalPayable(total)
                 .pdfFileName("invoice_" + year + "_" + month + "_site" + siteId + ".pdf")
                 .createdAt(LocalDateTime.now())
+                .clientId(site.getClient().getId())
                 .build();
 
         invoiceRepository.save(invoice);
@@ -205,7 +201,7 @@ public class InvoiceService {
         PdfPCell cell = new PdfPCell(
                 new Phrase(text, new Font(Font.HELVETICA, 10, Font.BOLD))
         );
-        cell.setBackgroundColor(Color.LIGHT_GRAY);
+        cell.setBackgroundColor(new Color(230, 230, 230));
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         table.addCell(cell);
     }
@@ -216,5 +212,11 @@ public class InvoiceService {
         table.addCell(desc);
         table.addCell(units);
         table.addCell("₹ " + amount);
+    }
+
+    private double round(double val) {
+        return BigDecimal.valueOf(val)
+                .setScale(2, RoundingMode.HALF_UP)
+                .doubleValue();
     }
 }
